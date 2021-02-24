@@ -6,17 +6,17 @@ CREATE DATABASE employee_db;
 USE employee_db;
 
 CREATE TABLE department (
-    id INT NOT NULL AUTO_INCREMENT,
+    department_id INT AUTO_INCREMENT,
     name VARCHAR(100),
-    PRIMARY KEY(id)
+    PRIMARY KEY(department_id)
 );
 
 CREATE TABLE role (
-    id INT NOT NULL AUTO_INCREMENT,
+    role_id INT AUTO_INCREMENT,
     title VARCHAR(30),
     salary DECIMAL (10, 2),
-    department_id INT, 
-    PRIMARY KEY(id)
+    department_id INT,
+    PRIMARY KEY(role_id)
 );
 
 CREATE TABLE employee (

@@ -7,7 +7,8 @@ const app = express();
 let roleArr = [];
 let managerArr = [];
 let departmentArr = [];
-let employeeArr = ['foo'];
+let employeeArr = [];
+
 
 //set the port to a variable
 const PORT = process.env.PORT || 8080;
@@ -54,7 +55,7 @@ function mainMenu() {
                 'Delete role',
                 'Delete department',
                 'Update employee role',
-                'Update employee manager',
+                // 'Update employee manager',
                 'Exit'
             ]
         }
@@ -96,9 +97,9 @@ function mainMenu() {
             case 'Update employee role':
               updEmpRole();
             break;
-            case 'Update employee manager':
-              updEmpManager();
-            break;
+            // case 'Update employee manager':
+            //   updEmpManager();
+            // break;
             case 'Exit':
               exitApp();
             break;
@@ -111,7 +112,7 @@ mainMenu();
 
 function viewAllEmployees(){
     //the query used to return all employee data
-    let myQuery = 'SELECT employee.id, employee.first_name, employee.last_name, role.title, role.salary, department.name FROM employee INNER JOIN role USING (role_id) INNER JOIN department USING (department_id);'
+    let myQuery = 'SELECT * FROM employee';
 
     connection.query(myQuery, function(err, res) {
       if (err) throw err;
@@ -257,35 +258,52 @@ function addRole() {
   
 
 //Delete the selected employee from the database
-async function delEmployee() {
-  const newArr = await getEmpArr()
-    console.log(newArr)
+function delEmployee() {
     inquirer.prompt(
       [
+        {
+          name:'yesNo',
+          type:'list',
+          message:'Are you sure you would like to remove an employee?',
+          choices:[
+            'Yes',
+            'No'
+          ]
+        },
         {
           name:'deleteEmp',
           type:'list',
           message:'Which employee would you like to remove?',
-          choices: newArr
+          choices: getEmpArr()
         }
       ]
       ).then((answer) => {
-        let empIndex = getEmpArr().indexOf(answer.deleteEmp);
-        connection.query(`DELETE FROM employee WHERE id = ${empIndex};`, function(err, res) {
+        if(answer.yesNo === 'Yes') {
+        connection.query(`DELETE FROM employee WHERE first_name = '${answer.deleteEmp}';`, function(err, res) {
           if(err) throw err;
           console.log(`${answer.deleteEmp} was successfully removed from the database.`);
-          
-        }).then(() => {
-          mainMenu();
         })
+        mainMenu();
+      }else{
+        mainMenu();
+      }
+      
       })
-    }
-    
+}
 
 //Delete the selected role from the database
 function delRole() {
   inquirer.prompt(
     [
+      {
+        name:'yesNo',
+        type:'list',
+        message:'Are you sure you would like to remove a role?',
+        choices:[
+          'Yes',
+          'No'
+        ]
+      },
       {
         name:'deleteRole',
         type:'list',
@@ -294,12 +312,15 @@ function delRole() {
       }
     ]
   ).then((answer) => {
-    let roleIndex = getRoleArr().indexOf(answer.deleteRole);
-    connection.query(`DELETE FROM role WHERE role_id = ${roleIndex};`, function(err, res) {
+    if(answer.yesNo === 'Yes') {
+    connection.query(`DELETE FROM role WHERE title = '${answer.deleteRole}'`, function(err, res) {
       if(err) throw err;
       console.log(`${answer.deleteRole} was successfully removed from the database.`)
       mainMenu()
     })
+  }else {
+    mainMenu()
+  }
   })
 }
 
@@ -308,6 +329,15 @@ function delDept() {
   inquirer.prompt(
     [
       {
+        name:'yesNo',
+        type:'list',
+        message:'Are you sure you would like to remove a role?',
+        choices:[
+          'Yes',
+          'No'
+        ]
+      },
+      {
         name:'deleteDept',
         type:'list',
         message:'Which department would you like to remove?',
@@ -315,19 +345,32 @@ function delDept() {
       }
     ]
   ).then((answer) => {
-    let deptIndex = getDeptArr().indexOf(answer.deleteDept);
-    connection.query(`DELETE FROM department WHERE depart_id = ${deptIndex};`, function(err, res) {
+    if(answer.yesNo === 'Yes') {
+    connection.query(`DELETE FROM department WHERE name = '${answer.deleteDept}'`, function(err, res) {
       if(err) throw err;
       console.log(`${answer.deleteDept} was successfully removed from the database.`);
       mainMenu();
     })
+  }else {
+    mainMenu();
+  }
   })
+
 }
 
 //Update the selected employees role
 function updEmpRole() {
   inquirer.prompt(
     [
+      {
+        name:'yesNo',
+        type:'list',
+        message:"Are you sure you would like to update an employee's role?",
+        choices:[
+          'Yes',
+          'No'
+        ]
+      },
       {
         name:'updRole',
         type:'list',
@@ -342,13 +385,18 @@ function updEmpRole() {
       }
     ]
   ).then((answer) => {
-    let roleIndex = getRoleArr().indexOf(answer.newRole);
-    let empIndex = getEmpArr().indexOf(answer.updRole)
-    connection.query(`UPDATE employee SET role_id = ${roleIndex} WHERE id = ${empIndex};`, function(err, res) {
+    
+    if(answer.yesNo === 'Yes') {
+      let roleIndex = getRoleArr().indexOf(answer.newRole) + 1;
+      console.log(roleIndex)
+      connection.query(`UPDATE employee SET role_id = ${roleIndex} WHERE first_name = '${answer.updRole}'`, function(err, res) {
       if(err) throw err;
-      console.log(`${answer.updRole}'s role was successfully changed to ${newRole}`)
+      console.log(`${answer.updRole}'s role was successfully changed to ${answer.newRole}`)
       mainMenu();
     })
+    }else{
+      mainMenu();
+    }
   })
 }
 
@@ -389,6 +437,7 @@ function exitApp() {
 
   //Get the role array for the prompts
   function getRoleArr() {
+    roleArr = [];
     connection.query('SELECT * FROM role;', function(err, res)  {
       if (err) throw err;
       for(let i = 0; i < res.length; i++) {
@@ -400,6 +449,7 @@ function exitApp() {
   
   //Get the manager array for the prompts
   function getManagerArr() {
+    managerArr = [];
     connection.query('SELECT first_name, last_name FROM employee WHERE manager_id IS NULL;', function(err,res) {
       if (err) throw err;
       for(let i = 0; i < res.length; i++) {
@@ -411,6 +461,7 @@ function exitApp() {
   
   //Get the department array for the prompts
   function getDeptArr() {
+    departmentArr = [];
     connection.query('SELECT * FROM department;', function(err,res) {
       if (err) throw err;
       for(let i = 0; i < res.length; i++) {
@@ -422,10 +473,14 @@ function exitApp() {
   
   //Get the employee array for the prompts
   function getEmpArr() {
-    let myArr = [];
-     return connection.query('SELECT employee.first_name FROM employee;', function(err, res) {
+    employeeArr = [];
+    connection.query('SELECT employee.first_name FROM employee;', function(err, res) {
       if (err) throw err;
-    })
+      for(let i = 0; i < res.length; i++) {
+        employeeArr.push(res[i].first_name)
+      }
+    });
+    return employeeArr;
 }
 
 app.listen(PORT, function() {
